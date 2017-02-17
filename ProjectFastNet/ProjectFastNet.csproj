@@ -43,7 +43,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Class1.cs" />
-    <Compile Include="GPSReceiverWrapper.cs" />
     <Compile Include="NMEAParser.cs" />
     <Compile Include="NMEAProprietarySentence.cs" />
     <Compile Include="NMEASentence.cs" />

@@ -1,0 +1,6 @@
+c:\users\micro\documents\visual studio 2017\Projects\ProjectFastNet\ProjectFastNet\bin\Debug\ProjectFastNet.exe.config
+c:\users\micro\documents\visual studio 2017\Projects\ProjectFastNet\ProjectFastNet\bin\Debug\ProjectFastNet.exe
+c:\users\micro\documents\visual studio 2017\Projects\ProjectFastNet\ProjectFastNet\bin\Debug\ProjectFastNet.pdb
+c:\users\micro\documents\visual studio 2017\Projects\ProjectFastNet\ProjectFastNet\obj\Debug\ProjectFastNet.csprojResolveAssemblyReference.cache
+c:\users\micro\documents\visual studio 2017\Projects\ProjectFastNet\ProjectFastNet\obj\Debug\ProjectFastNet.exe
+c:\users\micro\documents\visual studio 2017\Projects\ProjectFastNet\ProjectFastNet\obj\Debug\ProjectFastNet.pdb

@@ -42,6 +42,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Class1.cs" />
+    <Compile Include="GPSReceiverWrapper.cs" />
+    <Compile Include="NMEAParser.cs" />
+    <Compile Include="NMEAProprietarySentence.cs" />
+    <Compile Include="NMEASentence.cs" />
+    <Compile Include="NMEAStandartSentence.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

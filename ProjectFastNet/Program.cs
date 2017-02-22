@@ -12,17 +12,30 @@ namespace ProjectFastNet
         static void Main(string[] args)
         {
             //Initial GPS data read test
-            Console.WriteLine("Enter the port number below");                       //Get the port number from the user
+            Console.WriteLine("Enter the port number for the GPS below");           //Get the port number from the user
             String portNumber = Console.ReadLine();
             SerialPort GPSin = new SerialPort(portNumber, 4800, Parity.None, 8);    //Initialize the serial port for the GPS 
             GPSin.Open();                                                           //Open the port to communicate with the GPS
-            for (int i = 0; i < 20; i++)                                            //Read 20 strings of data    
+            while (Console.ReadLine)                           //Read data on enter until the user enters 'q'   
             {
-                String GPSinData = GPSin.ReadLine();
-                Console.WriteLine(GPSinData);
-            }
+                do {
+                    String GPSinData = GPSin.ReadLine();
+                    ParseGPS.parseNMEAstring(GPSinData);
+                    if (ParseGPS.getCommand() == 0)
+                    {
+                        Console.Clear();
+                        if (ParseGPS.findSignal())
+                        {
+                            Console.WriteLine("Signal Found");
+                            float[] latlog = ParseGPS.getCoordinates();
+                            Console.WriteLine("Latitude - ", latlog[0], " Longitude - ", latlog[1]);
+                        } else
+                        {
+                            Console.WriteLine("No Signal Found"); }
 
-            String conIN = Console.ReadLine();                                      //Wait for user input before closing the window
+                    }
+                } while (ParseGPS.getCommand() != 0);
+            }
         }
     }
 }

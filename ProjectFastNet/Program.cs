@@ -33,7 +33,10 @@ namespace ProjectFastNet
 
             receiveThread.Start();
             transmitThread.Start();
-            while (1==1)                                                            //Read data on enter until the user enters 'q'   
+            //wirelessIn.WriteLine("They work at least");
+            //Console.WriteLine(wirelessIn.ReadLine());
+            Thread.Sleep(2000);
+            while (true)                                                            //Read data on enter until the user enters 'q'   
             {
                 do {
                     String GPSinData = GPSin.ReadLine();

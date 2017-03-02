@@ -48,7 +48,10 @@ namespace ProjectFastNet
                         {
                             Console.WriteLine("Signal Found");
                             float[] latlog = ParseGPS.getCoordinates();
-                            Console.WriteLine("Latitude - "+ latlog[0]+ " Longitude - "+latlog[1]);
+                            char[] Compass = ParseGPS.getCompass();
+                            Console.WriteLine("Latitude - "+ latlog[0]+" "+Compass[0]+ " Longitude - "+latlog[1]+" "+Compass[1]);
+                            List<String> TimeList = ParseGPS.getTime();
+                            Console.WriteLine("Time: "+TimeList[0] + ":" + TimeList[1] + ":" + TimeList[2]);
                         } else
                         {
                             Console.WriteLine("No Signal Found"); }

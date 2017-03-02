@@ -37,6 +37,26 @@ namespace ProjectFastNet
             latLog[1] = float.Parse(NMEAstring[4 - ParseGPS.getCommand()]);
             return latLog;
         }
+         public static List<String> getTime()
+        {
+            List<String> TimeList = new List<String>();
+            String Time = NMEAstring[1 - ParseGPS.getCommand()];
+            String hours = Time.Substring(0, 2);
+            String mins = Time.Substring(2, 2);
+            String secs = Time.Substring(4, 5);
+            TimeList.Add(hours);
+            TimeList.Add(mins);
+            TimeList.Add(secs);
+            return TimeList;
+        }
+
+        public static char[] getCompass()
+        {
+            char[] Compass = new char[2];
+            Compass[0] = char.Parse(NMEAstring[3 - ParseGPS.getCommand()]);
+            Compass[1] = char.Parse(NMEAstring[5 - ParseGPS.getCommand()]);
+            return Compass;
+        }
         //Input a GGA string and this function will reply with the state of the network fix
         public static bool findSignal()
         {

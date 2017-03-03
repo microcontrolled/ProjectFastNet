@@ -20,21 +20,22 @@ namespace ProjectFastNet
             Console.WriteLine("Enter the port number for the GPS below");           //Get the port number from the user
             String portNumber = Console.ReadLine();
             SerialPort GPSin = new SerialPort(portNumber, 4800, Parity.None, 8);    //Initialize the serial port for the GPS 
-            GPSin.Open();                                                           //Open the port to communicate with the GPS
+            //GPSin.Open();                                                           //Open the port to communicate with the GPS
             Console.WriteLine("Enter the port number for the ALT5801 Wireless transceiver below");
             portNumber = Console.ReadLine();                                        //Get the Zigbee COM port from the user
             wirelessIn = new SerialPort(portNumber, 115200, Parity.None, 8);
             wirelessIn.Open();                                                      //Open the Zigbee port
 
             //Start the recieve thread. This thread will wait for an input from the wireless module and process the input into local variables when received
-            receiveThread = new Thread(Program.wirelessReceive);
+            //receiveThread = new Thread(Program.wirelessReceive);
             //Start the transmit thread. This thread will transmit the data packet announcing the node to the entire network
-            transmitThread = new Thread(Program.wirelessTransmit);
+            //transmitThread = new Thread(Program.wirelessTransmit);
 
-            receiveThread.Start();
-            transmitThread.Start();
-            //wirelessIn.WriteLine("They work at least");
-            //Console.WriteLine(wirelessIn.ReadLine());
+            //receiveThread.Start();
+            //transmitThread.Start();
+
+            //wirelessIn.WriteLine(0xFE+transmit1+FCSgenerate(transmit1));
+            Console.Write(wirelessIn.ReadLine());
             Thread.Sleep(2000);
             while (true)                                                            //Read data on enter until the user enters 'q'   
             {
@@ -80,5 +81,5 @@ namespace ProjectFastNet
                 wirelessIn.WriteLine("$THIS_IS_A_TEST");                        //Output the callsign
             }
         }
-    }
+    } 
 }

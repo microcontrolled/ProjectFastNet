@@ -11,6 +11,7 @@ namespace ProjectFastNet
         //Commands in this class output the GFF (General Format Frame) unless otherwise specified
         //Data is NOT transmitted from this class, it just formats the strings to be transmitted
 
+        //Register the PC with the ALT5801 device (MUST call to initialize)
         public static String ZB_APP_REGISTER(byte ep, uint profID, uint devID, byte devVer, String cmdIn, String cmdOut)
         {
             byte[] outputStr = new byte[] { (byte)(9 + (2 * cmdIn.Length) + (2 * cmdIn.Length)), 0x26, 0x0A, ep, (byte)profID, (byte)(profID >> 8), (byte)devID, (byte)(devID >> 8), devVer, 0, (byte)(2 * cmdIn.Length) };
@@ -21,6 +22,26 @@ namespace ProjectFastNet
         public static String SYS_RESET()
         {
             byte[] outputStr = new byte[] { 1,0x41,0x00,0x00};
+            return Encoding.ASCII.GetString(outputStr);
+        }
+
+        //Write the configuration details to the ALT5801
+        public static String ZB_WRITE_CFG(byte cfgID, String value)
+        {
+            byte[] outputStr = new byte[] { (byte)(2 + value.Length), 0x26, 0x05, cfgID, (byte)value.Length };
+            return String.Concat(Encoding.ASCII.GetString(outputStr), value);
+        }
+
+        public static String ZB_READ_CFG(byte cfgID)
+        {
+            byte[] outputStr = new byte[] { 1, 0x26, 0x04, cfgID };
+            return Encoding.ASCII.GetString(outputStr);
+        }
+
+        //Starts the Zigbee stack in the device
+        public static String ZB_START_REQ()
+        {
+            byte[] outputStr = new byte[] { 0x00, 0x26, 0x00 };
             return Encoding.ASCII.GetString(outputStr);
         }
 

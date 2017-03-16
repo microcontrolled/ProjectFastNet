@@ -13,15 +13,14 @@ namespace ProjectFastNet
         public static byte[] getPacket(SerialPort rxPort)
         {
             byte[] dataPacket = new byte[259];
-            byte dataIn = 0x00;
-            while (dataIn!=0xFE)                            //Wait for the data packet to start
+            while (dataPacket[0]!=0xFE)                            //Wait for the data packet to start
             {
                 while (rxPort.BytesToRead == 0);
-                dataIn = (byte)rxPort.ReadByte();
+                dataPacket[0] = (byte)rxPort.ReadByte();
             }
             while (rxPort.BytesToRead == 0) ;               //Get the length of the packet
-            dataIn = (byte)rxPort.ReadByte();
-            for (int i=0;i<(dataIn+2);i++)                  //Snag all the bytes in the packet, store in the packet buffer
+            dataPacket[1] = (byte)rxPort.ReadByte();
+            for (int i=2;i<(dataPacket[1]+3);i++)                  //Snag all the bytes in the packet, store in the packet buffer
             {
                 while (rxPort.BytesToRead == 0) ;
                 dataPacket[i] = (byte)rxPort.ReadByte();
@@ -45,10 +44,13 @@ namespace ProjectFastNet
         }
 
         //See if the return packet is the response expected
-        public static bool isMessage(byte[] packet, uint message)
+        public static bool isMessage(byte[] packet, ushort message)
         {
-            uint compVal = (((uint)packet[2])<<8)+((uint)packet[3]);   //Convert to unsigned int
-            if (compVal==message) { return true; }
+            if (packet.Length>3)
+            {
+                ushort compVal = BitConverter.ToUInt16(new byte[2] { packet[2], packet[3] }, 0);
+                if (compVal == message) { return true; }
+            }
             return false;
         }
 
@@ -60,7 +62,7 @@ namespace ProjectFastNet
             {
                 justGFF[i - 1] = packet[i];
             }
-            char outputVal = AltCOM.FCSgenerate(Encoding.ASCII.GetString(justGFF));     //Calculate the FCS
+            byte outputVal = AltCOM.FCSgenerate(justGFF);     //Calculate the FCS
             if (outputVal==packet[packet.Length-1])
             {
                 return true;                                //If the calculated value matches the read value, the packet is valid

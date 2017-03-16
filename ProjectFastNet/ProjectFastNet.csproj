@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="AltCOM.cs" />
     <Compile Include="AltGET.cs" />
+    <Compile Include="mDef.cs" />
     <Compile Include="ParseGPS.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

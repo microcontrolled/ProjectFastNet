@@ -8,7 +8,7 @@ namespace ProjectFastNet
 {
     class ParseGPS
     {
-        static String[] NMEAstring;
+        public static String[] NMEAstring;
         
         public static void parseNMEAstring(String NMEAin)
         {
@@ -37,6 +37,19 @@ namespace ProjectFastNet
             latLog[1] = float.Parse(NMEAstring[4 - ParseGPS.getCommand()]);
             return latLog;
         }
+        //Returns a list of strings for the coordinates, sorting the angle from the bearing
+        public static List<String> getCoordStr()
+        {
+            List<String> latlogStr = new List<String>();
+            String lat = NMEAstring[2 - ParseGPS.getCommand()];
+            String log = NMEAstring[4 - ParseGPS.getCommand()];
+            latlogStr.Add(lat.Substring(0, 2));
+            latlogStr.Add(lat.Substring(2, 5));
+            latlogStr.Add(log.Substring(0, 3));
+            latlogStr.Add(log.Substring(3, 5));
+            return latlogStr;
+        }
+
          public static List<String> getTime()
         {
             List<String> TimeList = new List<String>();

@@ -27,7 +27,7 @@ namespace ProjectFastNet
         }
         
         //If the packet is a return message, parses the message and returns the received string
-        public static String getRx(byte[] packet)
+        public static byte[] getRx(byte[] packet)
         {
             if (isMessage(packet,0x4687))
             {
@@ -36,9 +36,9 @@ namespace ProjectFastNet
                 {
                     outputField[i] = packet[i + 10];
                 }
-                return Encoding.ASCII.GetString(outputField);
+                return outputField;
             }
-            return "";
+            return new byte[] { };
         }
 
         //See if the return packet is the response expected

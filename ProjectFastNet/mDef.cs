@@ -24,6 +24,10 @@ namespace ProjectFastNet
         public const ushort ZB_START_REQUEST_RSP       = 0x6600;
         public const ushort ZB_START_CONFIRM           = 0x4680;
         public const ushort ZB_PERMIT_JOIN_RSP         = 0x6608;
+        public const ushort ZB_SEND_DATA_RSP = 0X6603;
+        public const ushort ZB_SEND_DATA_CONFIRM = 0x4683;
+
+        public const byte ZG_DEVICETYPE_ROUTER         = 0x01;
 
     }
 }

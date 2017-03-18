@@ -14,7 +14,6 @@ namespace ProjectFastNet
         public static Thread receiveThread;
         public static Thread transmitThread;
         public static byte[] rxPacket = new byte[259];
-        public static bool isCoordinator = false;
 
         public const byte channel = 6;
         public const byte PANID = 0x34;
@@ -41,48 +40,25 @@ namespace ProjectFastNet
             receiveThread.Start();
             //transmitThread.Start();
 
-            //Run the full initialization procedure for the ALT5801
-            AltCOM.genCom(wirelessIn,AltCOM.ZB_WRITE_CFG(0x03, new byte[1] { 3 }));
-            while (!AltGET.isMessage(rxPacket, mDef.ZB_WRITE_CFG_RSP)) ;
-            Console.WriteLine("Config Reset");
-            AltCOM.genCom(wirelessIn,AltCOM.SYS_RESET());
-            while (!AltGET.isMessage(rxPacket, mDef.SYS_RESET_IND)) ;
-            Console.WriteLine("Device Reset");
-            AltCOM.genCom(wirelessIn,AltCOM.ZB_WRITE_CFG(0x83, new byte[2] { 0x12, PANID }));
-            while (!AltGET.isMessage(rxPacket, mDef.ZB_WRITE_CFG_RSP)) ;
-            Console.WriteLine("Set PANID of the device");
-            AltCOM.genCom(wirelessIn,AltCOM.ZB_WRITE_CFG(0x84, new byte[4] { 0, 0, 0, channel }));
-            while (!AltGET.isMessage(rxPacket, mDef.ZB_WRITE_CFG_RSP)) ;
-            Console.WriteLine("Set the channel of the device to " + channel);
-            AltCOM.genCom(wirelessIn,AltCOM.ZB_READ_CFG(0x84));
-            while (!AltGET.isMessage(rxPacket, mDef.ZB_READ_CFG_RSP)) ;
-            Console.WriteLine("//////CHANGES CONFIRMED//////");
-            /////////////COPY PASTABLE DEBUG BLOCK FOR PRINTING THE SERIAL TERMINAL/////////
+            //AltCOM.genCom(wirelessIn, AltCOM.ZB_READ_CFG(0x87));
+            initALT5801(false);     
+
+            //AltCOM.genCom(wirelessIn, AltCOM.ZB_PERMIT_JOINING_REQUEST(0xFFFC, 0xFF));
+            //while (!AltGET.isMessage(rxPacket, 0x6608)) ;
+            //Console.WriteLine("Permissions Set");
+
+            //AltCOM.genCom(wirelessIn, AltCOM.ZB_READ_CFG(0x87));
+
             while (true)
             {
-                string hexOutput = String.Format("{0:X}", wirelessIn.ReadByte());
-                Console.Write("{0} ", hexOutput);
-            }
-            ////////////////////////////////////////////////////////////////////////////////
+                String getMessage = Console.ReadLine();
 
-            //This is a placeholder for the eventual auto-search feature. Select if it's a coordinator or router
-            Console.WriteLine("Enter 'C' to set this device as coordinator, otherwise device will be set as router");
-            String zState = Console.ReadLine();
-            if (zState[0].Equals("C")) { isCoordinator = true; }
-
-            if (isCoordinator)
-            {
-                byte[] cmd_in = new byte[2] { 0x01, 0x00 };
-                byte[] cmd_out = { 0x02, 0x00 };
-                //AltCOM.genCom(wirelessIn, AltCOM.ZB_APP_REGISTER(1, 1, 0, 0, 1, cmd_in, 1, cmd_out));
-
-                //AltCOM.genCom(wirelessIn, AltCOM.ZB_START_REQ());
-                while (!AltGET.isMessage(rxPacket, mDef.ZB_START_REQUEST_RSP)) ;
-                while (!AltGET.isMessage(rxPacket, mDef.ZB_START_CONFIRM)) ;
-                Console.WriteLine("Configured Coordinator");
+                AltCOM.genCom(wirelessIn, AltCOM.ZB_SEND_DATA(0xFFFD, 2, 0, 1, 1, Encoding.ASCII.GetBytes(getMessage)));
+                while (!AltGET.isMessage(rxPacket, mDef.ZB_SEND_DATA_RSP)) ;
+                while (!AltGET.isMessage(rxPacket, mDef.ZB_SEND_DATA_CONFIRM)) ;
+                Console.WriteLine("Data send Confirmed!");
             }
 
-            Thread.Sleep(2000);
             while (false)                                                            //Read data on enter until the user enters 'q'   
             {
                 do {
@@ -113,10 +89,15 @@ namespace ProjectFastNet
             while (Program.runTranceiver)
             {
                 rxPacket = AltGET.getPacket(wirelessIn);
-                Console.WriteLine("Packet Received");
+                /*Console.WriteLine("Packet Received");                             //Uncomment this to print all incoming transmissions to the console for debugging
                 for (int i=0;i<rxPacket.Length;i++)
                 {
                     Console.Write("{0} ", String.Format("{0:X}", rxPacket[i]));
+                }
+                Console.WriteLine(" ");*/
+                if (AltGET.isMessage(rxPacket, 0x4687))
+                {
+                    Console.WriteLine(AltGET.getRx(rxPacket));
                 }
             }
         }
@@ -128,6 +109,67 @@ namespace ProjectFastNet
             {
                 System.Threading.Thread.Sleep(500);                             //Pause the thread for half a second
                 
+            }
+        }
+
+        public static void initALT5801(bool isCoordinator)
+        {
+            //Run the full initialization procedure for the ALT5801
+            AltCOM.genCom(wirelessIn, AltCOM.ZB_WRITE_CFG(0x03, new byte[1] { 3 }));
+            while (!AltGET.isMessage(rxPacket, mDef.ZB_WRITE_CFG_RSP)) ;
+            Console.WriteLine("Config Reset");
+            //if (!isCoordinator)
+            //{
+                
+            //}
+            AltCOM.genCom(wirelessIn, AltCOM.SYS_RESET());
+            while (!AltGET.isMessage(rxPacket, mDef.SYS_RESET_IND)) ;
+            Console.WriteLine("Device Reset");
+            AltCOM.genCom(wirelessIn, AltCOM.ZB_WRITE_CFG(0x83, new byte[2] { 0x12, PANID }));
+            while (!AltGET.isMessage(rxPacket, mDef.ZB_WRITE_CFG_RSP)) ;
+            Console.WriteLine("Set PANID of the device");
+            AltCOM.genCom(wirelessIn, AltCOM.ZB_WRITE_CFG(0x84, new byte[4] { 0, 0, 0, channel }));
+            while (!AltGET.isMessage(rxPacket, mDef.ZB_WRITE_CFG_RSP)) ;
+            Console.WriteLine("Set the channel of the device to " + channel);
+            AltCOM.genCom(wirelessIn, AltCOM.ZB_READ_CFG(0x84));
+            while (!AltGET.isMessage(rxPacket, mDef.ZB_READ_CFG_RSP)) ;
+            Console.WriteLine("//////CHANGES CONFIRMED//////");
+            /*////////////COPY PASTABLE DEBUG BLOCK FOR PRINTING THE SERIAL TERMINAL/////////
+            while (true)
+            {
+                string hexOutput = String.Format("{0:X}", wirelessIn.ReadByte());
+                Console.Write("{0} ", hexOutput);
+            }
+            ///////////////////////////////////////////////////////////////////////////////*/
+            if (isCoordinator)
+            {
+                Console.WriteLine("Configuring Coordinator");
+                byte[] cmd_in = new byte[2] { 0x01, 0x00 };
+                byte[] cmd_out = { 0x02, 0x00 };
+                AltCOM.genCom(wirelessIn, AltCOM.ZB_APP_REGISTER(1, 1, 1, 0, 1, cmd_in, 1, cmd_out));
+                AltCOM.genCom(wirelessIn, AltCOM.ZB_START_REQ());
+                while (!AltGET.isMessage(rxPacket, mDef.ZB_START_REQUEST_RSP)) ;
+                while (!AltGET.isMessage(rxPacket, mDef.ZB_START_CONFIRM)) ;
+                Console.WriteLine("Configured Coordinator");
+            }
+            else
+            {
+                Console.WriteLine("Configuring Router");
+
+                AltCOM.genCom(wirelessIn, AltCOM.ZB_WRITE_CFG(0x87, new byte[1] { 1 }));
+                while (!AltGET.isMessage(rxPacket, mDef.ZB_WRITE_CFG_RSP)) ;
+                Console.WriteLine("Configured Device Type");
+
+                AltCOM.genCom(wirelessIn, AltCOM.SYS_RESET());
+                while (!AltGET.isMessage(rxPacket, mDef.SYS_RESET_IND)) ;
+                byte[] cmd_in = new byte[2] { 0x02, 0x00 };
+                byte[] cmd_out = { 0x01, 0x00 };
+                AltCOM.genCom(wirelessIn, AltCOM.ZB_APP_REGISTER(1, 1, 0, 0, 1, cmd_in, 1, cmd_out));
+                while (!AltGET.isMessage(rxPacket, mDef.ZB_REGISTER_RSP)) ;
+                AltCOM.genCom(wirelessIn, AltCOM.ZB_START_REQ());
+                while (!AltGET.isMessage(rxPacket, mDef.ZB_START_REQUEST_RSP)) ;
+                while (!AltGET.isMessage(rxPacket, mDef.ZB_START_CONFIRM)) ;
+                Console.WriteLine("Configured Router");
             }
         }
     } 

@@ -12,20 +12,18 @@ namespace ProjectFastNet
         //This will wait until a valid packet is received, then it will return the packet as a byte array
         public static byte[] getPacket(SerialPort rxPort)
         {
-            byte[] dataPacket = new byte[259];
-            while (dataPacket[0]!=0xFE)                            //Wait for the data packet to start
+            while ((byte)rxPort.ReadByte() != 0xFE) ;               //Wait for the data packet to start
+           // while (rxPort.BytesToRead == 0) ;                       //Get the length of the packet
+            byte packetLength = (byte)rxPort.ReadByte();
+            byte[] dataPacket = new byte[packetLength+5];
+            dataPacket[0] = 0xFE;
+            dataPacket[1] = packetLength;
+            for (int i=2;i<(packetLength+5);i++)                   //Snag all the bytes in the packet, store in the packet buffer
             {
-                while (rxPort.BytesToRead == 0);
-                dataPacket[0] = (byte)rxPort.ReadByte();
-            }
-            while (rxPort.BytesToRead == 0) ;               //Get the length of the packet
-            dataPacket[1] = (byte)rxPort.ReadByte();
-            for (int i=2;i<(dataPacket[1]+3);i++)                  //Snag all the bytes in the packet, store in the packet buffer
-            {
-                while (rxPort.BytesToRead == 0) ;
+                //while (rxPort.BytesToRead == 0) ;
                 dataPacket[i] = (byte)rxPort.ReadByte();
             }
-            return dataPacket;                              //Return the unprocessed packet
+            return dataPacket;                                      //Return the unprocessed packet
         }
         
         //If the packet is a return message, parses the message and returns the received string
@@ -33,10 +31,10 @@ namespace ProjectFastNet
         {
             if (isMessage(packet,0x4687))
             {
-                byte[] outputField = new byte[packet[1] - 8];
-                for (int i=0;i<(packet[1]-9);i++)
+                byte[] outputField = new byte[packet[1] - 6];
+                for (int i=0;i<(packet[1]-6);i++)
                 {
-                    outputField[i] = packet[i + 6];
+                    outputField[i] = packet[i + 10];
                 }
                 return Encoding.ASCII.GetString(outputField);
             }
@@ -48,7 +46,8 @@ namespace ProjectFastNet
         {
             if (packet.Length>3)
             {
-                ushort compVal = BitConverter.ToUInt16(new byte[2] { packet[2], packet[3] }, 0);
+                ushort compVal = BitConverter.ToUInt16(new byte[2] { packet[3], packet[2] }, 0);
+                //Console.WriteLine("This item is {0}", compVal);
                 if (compVal == message) { return true; }
             }
             return false;

@@ -24,13 +24,33 @@ namespace ProjectFastNet
         }
 
         //Commands in this class output the GFF (General Format Frame) unless otherwise specified
-        //Data is NOT transmitted from this class, it just formats the strings to be transmitted
+        //Data is NOT transmitted from this class outside of the genCom method, it just formats the strings to be transmitted
 
         //Register the PC with the ALT5801 device (MUST call to initialize)
-        public static String ZB_APP_REGISTER(byte ep, ushort profID, ushort devID, byte devVer, byte inputs, byte[] cmdIn, byte outputs, byte[] cmdOut)
+        public static byte[] ZB_APP_REGISTER(byte ep, ushort profID, ushort devID, byte devVer, byte inputs, byte[] cmdIn, byte outputs, byte[] cmdOut)
         {
-            byte[] outputStr = new byte[] { (byte)(9 + (2 * inputs) + (2 * outputs)), 0x26, 0x0A, ep, (byte)profID, (byte)(profID >> 8), (byte)devID, (byte)(devID >> 8), devVer, 0, inputs };
-            return String.Concat(String.Concat(Encoding.ASCII.GetString(outputStr), Encoding.Default.GetString(cmdIn))+outputs,Encoding.Default.GetString(cmdOut));
+            byte[] outputStr = new byte[(byte)(12+ (2 * inputs) + (2 * outputs))];
+            outputStr[0] = (byte)(9 + (2 * inputs) + (2 * outputs));
+            outputStr[1] = 0x26;
+            outputStr[2] = 0x0A;
+            outputStr[3] = ep;
+            outputStr[4] = (byte)profID;
+            outputStr[5] = (byte)(profID >> 8);
+            outputStr[6] = (byte)devID;
+            outputStr[7] = (byte)(devID >> 8);
+            outputStr[8] = devVer;
+            outputStr[9] = 0;
+            outputStr[10] = inputs;
+            for (int i=0;i<cmdIn.Length;i++)
+            {
+                outputStr[i + 11] = cmdIn[i];
+            }
+            outputStr[cmdIn.Length + 11] = outputs;
+            for (int i=0;i<cmdOut.Length;i++)
+            {
+                outputStr[i + 12 + cmdIn.Length] = cmdOut[i];
+            }
+            return outputStr;
         }
 
         //Sends the reset signal to the ALT5801
@@ -63,10 +83,10 @@ namespace ProjectFastNet
         }
 
         //Starts the Zigbee stack in the device
-        public static String ZB_START_REQ()
+        public static byte[] ZB_START_REQ()
         {
             byte[] outputStr = new byte[] { 0x00, 0x26, 0x00 };
-            return Encoding.ASCII.GetString(outputStr);
+            return outputStr;
         }
 
         //Send the data to the network
@@ -80,26 +100,46 @@ namespace ProjectFastNet
          * ACK - TRUE if requesting ack from the destination
          * DATA - The data wanting to be sent
          */
-        public static String ZB_SEND_DATA(ushort dest, ushort cmd, byte handle, byte ack, byte radius, String data)
+        public static byte[] ZB_SEND_DATA(ushort dest, ushort cmd, byte handle, byte ack, byte radius, byte[] data)
         {
-            byte[] outputStr = new byte[] { (byte)(8 + data.Length), 0x26, 0x03, (byte)dest, (byte)(dest >> 8), (byte)cmd, (byte)(cmd >> 8), handle, ack, radius, (byte)(data.Length) };
-            return String.Concat(Encoding.ASCII.GetString(outputStr), data);
+            byte[] outputStr = new byte[11 + data.Length];
+            outputStr[0] = (byte)(8 + data.Length);
+            outputStr[1] = 0x26;
+            outputStr[2] = 0x03;
+            outputStr[3] = (byte)dest;
+            outputStr[4] = (byte)(dest >> 8);
+            outputStr[5] = (byte)cmd;
+            outputStr[6] = (byte)(cmd >> 8);
+            outputStr[7] = handle;
+            outputStr[8] = ack;
+            outputStr[9] = radius;
+            outputStr[10] = (byte)(data.Length);
+            for (int i=0;i<data.Length;i++)
+            {
+                outputStr[11 + i] = data[i];
+            }
+            return outputStr;
         }
 
-        public static String ZB_GET_INFO(byte param)
+        public static byte[] ZB_GET_INFO(byte param)
         {
             byte[] outputStr = new byte[] { 1, 0x26, 0x06, param };
-            return Encoding.ASCII.GetString(outputStr);
+            return outputStr;
+        }
+
+        public static byte[] ZB_PERMIT_JOINING_REQUEST(ushort destination,byte timeout)
+        {
+            return new byte[] { 0x03, 0x26, 0x08, (byte)destination, (byte)(destination >> 8), timeout };
         }
 
         //Sets up the radio for testing, 0xFF is the max txPower
         //TESTMODE = 0 - Transmit unmodulated carrier with spcified frequency
         //TESTMODE = 1 - Transmit psudo-random data with specified frequency
         //TESTMODE = 2 - Set to receive mode on specified frequency
-        public static String SYS_TEST_RF(byte testMode, ushort frequency, byte txPower)
+        public static byte[] SYS_TEST_RF(byte testMode, ushort frequency, byte txPower)
         {
             byte[] outputStr = new byte[] { 4, 0x41, 0x40, testMode, (byte)frequency, (byte)(frequency >> 8), txPower };
-            return Encoding.ASCII.GetString(outputStr);
+            return outputStr;
         }
 
         //Generate the FCS byte to confirm the end of the data string

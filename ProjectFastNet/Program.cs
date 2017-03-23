@@ -22,7 +22,10 @@ namespace ProjectFastNet
         public static String deviceData;
         public static String[] receivedData = new String[100];
         public static String[] devLookup = new String[100];
+        public static bool[] devRefresh = new bool[100];
+        public static int[] timeToRefresh = new int[100];
         public static String testStr = "27E9,3747.8690,N,08025.9719,W,23,26,14";
+        public static String noSignalStr = "NO GPS DATA";
         public static int devIndex = 0;
         public static ushort devID;
 
@@ -31,7 +34,7 @@ namespace ProjectFastNet
             //Generate the device ID of this end
             Random devIDgen = new Random();
             devID = (ushort)devIDgen.Next(0x0000, 0xFFFF);
-            deviceData = String.Format("{0:X}", devID) + ",NO SIGNAL";
+            deviceData = String.Format("{0:X}", devID) + ","+noSignalStr;
             //Initial GPS data read test
             Console.WriteLine("Enter the port number for the GPS below");           //Get the port number from the user
             String portNumber = Console.ReadLine();
@@ -53,9 +56,16 @@ namespace ProjectFastNet
             receiveThread.Start();
             GPSThread.Start();
 
-            initALT5801(false);
+            Console.WriteLine("Enter 'COORD' for Coordinator");
+            String coordDec = Console.ReadLine();
+            if (String.Equals("COORD",coordDec))
+            {
+                initALT5801(true);
+            } else {
+                initALT5801(false);
+            }
 
-            transmitThread.Start(); 
+            transmitThread.Start();
 
             /*while (true)
             {
@@ -72,12 +82,25 @@ namespace ProjectFastNet
                 Console.Clear();
                 Console.WriteLine("Active Device: ");
                 Console.WriteLine(deviceData);
+                Console.WriteLine();
                 for (int i=0;i<devIndex;i++)
                 {
-                    Console.WriteLine("Mesh Device {0}", i);
-                    Console.WriteLine(receivedData[i]);
+                    if(devRefresh[i] == true)
+                    {
+                        timeToRefresh[i] = 0;
+                        devRefresh[i] = false;
+                    } else
+                    {
+                        timeToRefresh[i]++;
+                    }
+                    if (timeToRefresh[i] < 12)
+                    {
+                        Console.WriteLine("Mesh Device {0}", i);
+                        Console.WriteLine(receivedData[i]);
+                        Console.WriteLine();
+                    }
                 }
-                Thread.Sleep(300);
+                Thread.Sleep(250);
             }
         }
 
@@ -86,7 +109,7 @@ namespace ProjectFastNet
             Console.WriteLine("Transmit Thread Started");
             while (Program.runTranceiver)
             {
-                Thread.Sleep(300);
+                Thread.Sleep(800);
                 AltCOM.genCom(wirelessIn, AltCOM.ZB_SEND_DATA(0xFFFD, 2, 0, 1, 1, Encoding.UTF8.GetBytes(deviceData)));
                 while (!AltGET.isMessage(rxPacket, mDef.ZB_SEND_DATA_RSP)) ;
                 while (!AltGET.isMessage(rxPacket, mDef.ZB_SEND_DATA_CONFIRM)) ;
@@ -100,12 +123,14 @@ namespace ProjectFastNet
             while (Program.runTranceiver)
             {
                 rxPacket = AltGET.getPacket(wirelessIn);
-               /* Console.WriteLine("Packet Received");                             //Uncomment this to print all incoming transmissions to the console for debugging
+
+                /*Console.WriteLine("Packet Received");                             //Uncomment this to print all incoming transmissions to the console for debugging
                 for (int i=0;i<rxPacket.Length;i++)
                 {
                     Console.Write("{0} ", String.Format("{0:X}", rxPacket[i]));
                 }
                 Console.WriteLine(" ");*/
+
                 if (AltGET.isMessage(rxPacket, 0x4687))
                 {
                     String newDat = Encoding.ASCII.GetString(AltGET.getRx(rxPacket));           //Store the packet locally
@@ -122,11 +147,13 @@ namespace ProjectFastNet
                     if (wasEntered!=-1)                             //If it's already registered, override the current data
                     {
                         receivedData[wasEntered] = newDat;
+                        devRefresh[wasEntered] = true;
                     } else
                     {                                               //If not, register a new entry in the table and increase the index
                         devIndex++;
                         devLookup[devIndex] = cotSet[0];
                         receivedData[devIndex] = newDat;
+                        devRefresh[devIndex] = true;
                     }
                 }
             }
@@ -150,13 +177,13 @@ namespace ProjectFastNet
                             char[] Compass = ParseGPS.getCompass();
                             //Console.WriteLine("Latitude - " + latlog[0] + " " + Compass[0] + " Longitude - " + latlog[1] + " " + Compass[1]);
                             List<String> TimeList = ParseGPS.getTime();
-                            String[] assemStr = new String[] { String.Format("{0:X}", devID), ",", ParseGPS.NMEAstring[2], ",", Compass[0].ToString(), ",", ParseGPS.NMEAstring[4], ",", Compass[1].ToString(), ",", TimeList[0], ",", TimeList[1], ",", TimeList[2].Substring(0,3) };
+                            String[] assemStr = new String[] { "0x", String.Format("{0:X}", devID), ",", ParseGPS.NMEAstring[2], ",", Compass[0].ToString(), ",", ParseGPS.NMEAstring[4], ",", Compass[1].ToString(), ",", TimeList[0], ",", TimeList[1], ",", TimeList[2].Substring(0,3) };
                             deviceData = String.Join("", assemStr);
                             //Console.WriteLine("Time: " + TimeList[0] + ":" + TimeList[1] + ":" + TimeList[2]);
                         }
                         else
                         {
-                            deviceData = ("0x"+String.Format("{0:X}", devID)+",NO SIGNAL");
+                            deviceData = ("0x"+String.Format("{0:X}", devID)+","+noSignalStr);
                             //Console.WriteLine("No Signal Found");
                         }
                     }
@@ -210,6 +237,10 @@ namespace ProjectFastNet
 
                 AltCOM.genCom(wirelessIn, AltCOM.SYS_RESET());
                 while (!AltGET.isMessage(rxPacket, mDef.SYS_RESET_IND)) ;
+
+                AltCOM.genCom(wirelessIn, AltCOM.ZB_READ_CFG(0x87));
+                while (!AltGET.isMessage(rxPacket, mDef.ZB_READ_CFG_RSP)) ;
+
                 byte[] cmd_in = new byte[2] { 0x02, 0x00 };
                 byte[] cmd_out = { 0x01, 0x00 };
                 AltCOM.genCom(wirelessIn, AltCOM.ZB_APP_REGISTER(1, 1, 0, 0, 1, cmd_in, 1, cmd_out));

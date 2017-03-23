@@ -28,6 +28,7 @@ namespace ProjectFastNet
         public static String noSignalStr = "NO GPS DATA";
         public static int devIndex = 0;
         public static ushort devID;
+        public static bool isCoord = false;
 
         static void Main(string[] args)
         {
@@ -35,6 +36,14 @@ namespace ProjectFastNet
             Random devIDgen = new Random();
             devID = (ushort)devIDgen.Next(0x0000, 0xFFFF);
             deviceData = String.Format("{0:X}", devID) + ","+noSignalStr;
+            //List current COM ports
+            Console.WriteLine("Currently Open COM ports:");
+            String[] currCOMS = SerialPort.GetPortNames();
+            for (int i=0;i<currCOMS.Length;i++)
+            {
+                Console.Write(currCOMS[i] + ",");
+            }
+            Console.WriteLine();
             //Initial GPS data read test
             Console.WriteLine("Enter the port number for the GPS below");           //Get the port number from the user
             String portNumber = Console.ReadLine();
@@ -56,14 +65,16 @@ namespace ProjectFastNet
             receiveThread.Start();
             GPSThread.Start();
 
-            Console.WriteLine("Enter 'COORD' for Coordinator");
+            /*Console.WriteLine("Enter 'COORD' for Coordinator");
             String coordDec = Console.ReadLine();
             if (String.Equals("COORD",coordDec))
             {
                 initALT5801(true);
             } else {
                 initALT5801(false);
-            }
+            }*/
+
+            initALT5801(false);
 
             transmitThread.Start();
 
@@ -76,9 +87,10 @@ namespace ProjectFastNet
                 while (!AltGET.isMessage(rxPacket, mDef.ZB_SEND_DATA_CONFIRM)) ;
                 Console.WriteLine("Data send Confirmed!");
             }*/
-
+            int cleanCount = 0;
             while (true)                                                              
             {
+                bool cleanSweep = false;                            //Triggered true if any nodes are read active in the print loop
                 Console.Clear();
                 Console.WriteLine("Active Device: ");
                 Console.WriteLine(deviceData);
@@ -98,7 +110,31 @@ namespace ProjectFastNet
                         Console.WriteLine("Mesh Device {0}", i);
                         Console.WriteLine(receivedData[i]);
                         Console.WriteLine();
+                        cleanSweep = true;
                     }
+                }
+
+                //If the device was auto-configed as a coordinator, turn back into a router once a node has been found
+                if (isCoord&&cleanSweep) {
+                    Console.Clear();
+                    transmitThread.Suspend();
+                    initALT5801(false);
+                    transmitThread.Resume();
+                }
+                if (!cleanSweep)
+                {
+                    cleanCount++;
+                } else
+                {
+                    cleanCount = 0;
+                }
+                if (cleanCount>40)
+                {
+                    Console.Clear();
+                    transmitThread.Suspend();
+                    initALT5801(!isCoord);
+                    transmitThread.Resume();
+                    cleanCount = 0;
                 }
                 Thread.Sleep(250);
             }
@@ -226,10 +262,13 @@ namespace ProjectFastNet
                 while (!AltGET.isMessage(rxPacket, mDef.ZB_START_REQUEST_RSP)) ;
                 while (!AltGET.isMessage(rxPacket, mDef.ZB_START_CONFIRM)) ;
                 Console.WriteLine("Configured Coordinator");
+                isCoord = true;
             }
             else
             {
                 Console.WriteLine("Configuring Router");
+
+                int routerWait = 0;
 
                 AltCOM.genCom(wirelessIn, AltCOM.ZB_WRITE_CFG(0x87, new byte[1] { 1 }));
                 while (!AltGET.isMessage(rxPacket, mDef.ZB_WRITE_CFG_RSP)) ;
@@ -247,8 +286,23 @@ namespace ProjectFastNet
                 while (!AltGET.isMessage(rxPacket, mDef.ZB_REGISTER_RSP)) ;
                 AltCOM.genCom(wirelessIn, AltCOM.ZB_START_REQ());
                 while (!AltGET.isMessage(rxPacket, mDef.ZB_START_REQUEST_RSP)) ;
-                while (!AltGET.isMessage(rxPacket, mDef.ZB_START_CONFIRM)) ;
-                Console.WriteLine("Configured Router");
+                while (!AltGET.isMessage(rxPacket, mDef.ZB_START_CONFIRM))
+                {
+                    if (routerWait>20)
+                    {
+                        break;              //Stop waiting for a response if you waited longer than 5 seconds
+                    }
+                    routerWait++;
+                    Thread.Sleep(250);
+                };
+                if (routerWait < 21)
+                {
+                    Console.WriteLine("Configured Router");
+                    isCoord = false; 
+                } else
+                {
+                    initALT5801(true);          
+                }
             }
         }
     } 
